@@ -1,0 +1,139 @@
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+
+const SeeReport = () => {
+  const [userId, setUserId] = useState("");
+  const [password, setPassword] = useState("");
+  const [showData, setShowData] = useState(false);
+  const [userData, setUserData] = useState([]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/authenticate",
+        {
+          userId,
+          password,
+        }
+      );
+
+      const { role } = response.data;
+
+      if (role === "admin") {
+        fetchData();
+
+        setShowData(true);
+
+        localStorage.setItem("userId", userId);
+        alert("Login Done");
+      } else {
+        alert("Please Recheck your credentials.");
+      }
+    } catch (error) {
+      alert("Please Recheck your credentials.");
+    }
+  };
+
+  const handleLogout = () => {
+    // Clear local storage and reset authentication state
+    localStorage.removeItem("userId");
+    setShowData(false);
+  };
+
+  // Check if the user is authenticated
+  const isAuthenticated = localStorage.getItem("userId");
+
+  // Function to fetch data from the server
+  const fetchData = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/get-data");
+      setUserData(response.data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [isAuthenticated]);
+
+  return (
+    <div id="main" className="h-[full] p-10">
+      {!isAuthenticated ? (
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col justify-center items-center bg-[#ffffff4d] max-w-[300px] mx-auto p-5 rounded-2xl"
+        >
+          <label>
+            ID:
+            <input
+              className="flex flex-row"
+              type="text"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+            />
+          </label>
+          <br />
+          <label>
+            Password:
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </label>
+          <br />
+          <button type="submit">Submit</button>
+        </form>
+      ) : (
+        <div>
+          <button
+            className=" bg-[#ffffff75] p-3 rounded-2xl"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+
+          {showData && (
+            <div className="data justify-center items-center flex flex-col">
+              <h2 className="font-serif text-3xl text-white my-5 underline">
+                Data
+              </h2>
+              {userData.map((user) => (
+                <div
+                  key={user._id}
+                  className="user-data border flex flex-col items-start bg-[#ffffff54] rounded-2xl p-2 my-3"
+                >
+                  <p>
+                    <span>Name:</span> {user.name}
+                  </p>
+                  <p>
+                    <span>Mobile Number:</span> {user.mobileNumber}
+                  </p>
+                  <p>
+                    <span>Email:</span> {user.email}
+                  </p>
+                  <p>
+                    <span>Position:</span> {user.position}
+                  </p>
+                  <p>
+                    <span>Message:</span> {user.message}
+                  </p>
+                  <p>
+                    <span>Sentiment:</span> {user.sentiment}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SeeReport;
